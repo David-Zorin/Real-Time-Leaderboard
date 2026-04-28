@@ -1,17 +1,18 @@
-from fastapi import FastAPI, Depends
-from db.connection import get_connection
+from fastapi import FastAPI
+from app.api.v1.api import api_router
+from app.core.config import settings
+from app.db.connection import close_all_connections
 
-app = FastAPI(title="Real-Time Leaderboard")
+app = FastAPI(title=settings.PROJECT_NAME)
 
-
-def get_db():
-    conn = get_connection()
-    try:
-        yield conn
-    finally:
-        conn.close()
-
+# Include all our modular routes
+app.include_router(api_router, prefix="/api/v1")
 
 @app.get("/")
-def root(db=Depends(get_db)):
-    return "Server is running and db is connected"
+def root():
+    return {"message": "Welcome to the Real-Time Leaderboard API"}
+
+@app.on_event("shutdown")
+def shutdown_event():
+    # Gracefully close DB connections when the server stops
+    close_all_connections()

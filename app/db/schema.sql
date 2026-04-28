@@ -20,6 +20,6 @@ CREATE TABLE IF NOT EXISTS scores (
     id           SERIAL PRIMARY KEY,
     user_id      INTEGER REFERENCES users(id) ON DELETE CASCADE,
     game_id      INTEGER REFERENCES games(id) ON DELETE CASCADE,
-    score        FLOAT NOT NULL,, 
+    score        FLOAT NOT NULL,
     submitted_at TIMESTAMP DEFAULT NOW()
 );

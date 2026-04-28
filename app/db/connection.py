@@ -1,9 +1,36 @@
-import psycopg2
-import os
-from dotenv import load_dotenv
+from contextlib import contextmanager
+import psycopg2.pool
+from app.core.config import settings
 
-load_dotenv()
+try:
+    db_pool = psycopg2.pool.ThreadedConnectionPool(
+        1, 20, dsn=settings.DATABASE_URL
+    )
+    print("✅ Database connection pool created successfully")
+except Exception as e:
+    print(f"Error creating connection pool: {e}")
+    db_pool = None
 
 
-def get_connection():
-    return psycopg2.connect(os.getenv("DATABASE_URL"))
+@contextmanager
+def get_db_connection():
+    """
+    Context manager to borrow a connection from the pool
+    and return it automatically when finished.
+    """
+    conn = db_pool.getconn()
+    try:
+        yield conn
+    finally:
+        db_pool.putconn(conn)
+
+def get_db():
+    """FastAPI dependency that yields a database connection."""
+    with get_db_connection() as conn:
+        yield conn
+
+
+def close_all_connections():
+    """Gracefully shut down the pool when the server stops."""
+    if db_pool:
+        db_pool.closeall()
