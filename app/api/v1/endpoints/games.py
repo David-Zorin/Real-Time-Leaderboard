@@ -10,7 +10,7 @@ router = APIRouter()
 @router.post("/games", status_code=status.HTTP_201_CREATED)
 def create_game(game_data: GameCreate, db = Depends(get_db), current_user = Depends(get_current_user)):
     """Only authenticated users can register a new game."""
-    return GameService.create_game(db, game_data.title, game_data.description)
+    return GameService.create_game(db, game_data)
 
 @router.get("/games")
 def list_games(db = Depends(get_db)):

@@ -1,19 +1,20 @@
+from app.schemas.score import GameCreate
 from psycopg2.extras import RealDictCursor
 from fastapi import HTTPException, status
 
 class GameService:
     @staticmethod
-    def create_game(conn, title: str, description: str):
-        """Adds a new game to the system."""
+    def create_game(conn, game_in: GameCreate):
+        """Adds a new game to the system using the Schema."""
         try:
             with conn.cursor() as cur:
                 cur.execute(
                     "INSERT INTO games (title, description) VALUES (%s, %s) RETURNING id",
-                    (title, description)
+                    (game_in.title, game_in.description)
                 )
                 game_id = cur.fetchone()[0]
                 conn.commit()
-                return {"id": game_id, "title": title, "message": "Game created successfully"}
+                return {"id": game_id, "title": game_in.title, "message": "Game created successfully"}
         except Exception as e:
             conn.rollback()
             raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
