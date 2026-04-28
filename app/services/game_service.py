@@ -26,12 +26,13 @@ class GameService:
             cur.execute("SELECT * FROM games ORDER BY created_at DESC")
             return cur.fetchall()
 
+from app.services.leaderboard_service import LeaderboardService
+
 class ScoreService:
     @staticmethod
-    def submit_score(conn, user_id: int, game_id: int, score: float):
+    def submit_score(conn, user_id: int, username: str, game_id: int, score: float):
         """
-        Records a player's score. 
-        In a real-time system, we'd also update Redis here (we'll do that in the next step!).
+        Records a player's score and updates the real-time leaderboard in Redis.
         """
         try:
             with conn.cursor() as cur:
@@ -40,13 +41,17 @@ class ScoreService:
                 if not cur.fetchone():
                     raise HTTPException(status_code=404, detail="Game not found")
 
-                # 2. Insert the score
+                # 2. Insert the score into DB (Permanent Record)
                 cur.execute(
                     "INSERT INTO scores (user_id, game_id, score) VALUES (%s, %s, %s) RETURNING id",
                     (user_id, game_id, score)
                 )
                 conn.commit()
-                return {"message": "Score submitted successfully"}
+
+                # 3. Update Redis (Real-time Ranking)
+                LeaderboardService.increment_score(username, score)
+
+                return {"message": "Score submitted successfully", "new_points": score}
         except Exception as e:
             conn.rollback()
             if isinstance(e, HTTPException): raise e

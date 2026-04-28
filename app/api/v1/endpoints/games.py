@@ -7,12 +7,12 @@ from app.api.deps import get_current_user
 
 router = APIRouter()
 
-@router.post("/games", status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED)
 def create_game(game_data: GameCreate, db = Depends(get_db), current_user = Depends(get_current_user)):
     """Only authenticated users can register a new game."""
     return GameService.create_game(db, game_data)
 
-@router.get("/games")
+@router.get("/")
 def list_games(db = Depends(get_db)):
     """Anyone can see the list of games."""
     return GameService.list_games(db)
@@ -21,6 +21,12 @@ def list_games(db = Depends(get_db)):
 def submit_score(score_data: ScoreSubmit, db = Depends(get_db), current_user = Depends(get_current_user)):
     """
     Submits a score for the current logged-in user.
-    Notice how we use 'current_user["id"]' so the user can't fake being someone else.
+    We pass both ID (for DB) and Username (for Redis leaderboard).
     """
-    return ScoreService.submit_score(db, current_user["id"], score_data.game_id, score_data.score)
+    return ScoreService.submit_score(
+        db, 
+        current_user["id"], 
+        current_user["username"], 
+        score_data.game_id, 
+        score_data.score
+    )
